@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5080;
 const app = express();
@@ -20,7 +20,7 @@ const client = new MongoClient(uri, {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
@@ -35,22 +35,47 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/tasks", async(req, res) =>{
+    app.get("/tasks", async (req, res) => {
       const cursor = await taskCollection.find({});
       const result = await cursor.toArray();
       res.send(result);
-    })
+    });
 
-    
+    // update and delete routes
+    app.put("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedProduct = req.body;
+      console.log(updatedProduct);
+      const product = {
+        $set: {
+          title: updatedProduct.title,
+          description: updatedProduct.description,
+          deadline: updatedProduct.deadline,
+          priority: updatedProduct.priority,
+        },
+      };
+      const result = await taskCollection.updateOne(filter, product, options);
+      res.send(result);
+    });
 
+    app.delete("/tasks/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await taskCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
-}
+  }
 }
 run().catch(console.dir);
 
